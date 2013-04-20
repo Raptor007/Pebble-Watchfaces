@@ -1,0 +1,24 @@
+{
+	"friendlyVersion": "1.0",
+	"versionDefName": "APP_RESOURCES",
+	"media":
+	[
+		{
+			"type": "png",
+			"defName": "IMAGE_MENU_ICON",
+			"file": "images/iwatch_icon.png"
+		},
+
+		{
+			"type": "png",
+			"defName": "IMAGE_BACKGROUND",
+			"file": "images/iwatch.png"
+		},
+		
+		{
+			"type": "font",
+			"defName": "FONT_CHICAGO_12",
+			"file": "fonts/Chicago.ttf"
+		}
+	]
+}
