@@ -17,8 +17,15 @@
 		
 		{
 			"type": "font",
-			"defName": "FONT_CHICAGO_12",
+			"characterRegex": "[:0-9]",
+			"defName": "FONT_CHICAGO_13",
 			"file": "fonts/Chicago.ttf"
+		},
+		
+		{
+			"type": "font",
+			"defName": "FONT_GENEVA_12",
+			"file": "fonts/Geneva.ttf"
 		}
 	]
 }

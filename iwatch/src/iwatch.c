@@ -13,8 +13,10 @@ PBL_APP_INFO( MY_UUID,
 Window window;
 BmpContainer background_image;
 TextLayer time_layer;
+TextLayer date_layer;
 
 char time_text[] = "00:00:00";
+char date_text[] = "September 00, 0000\nSaturday";
 
 
 void update_display( PblTm *current_time );
@@ -31,7 +33,10 @@ void update_display( PblTm *current_time )
 	else
 		string_format_time( time_text, sizeof(time_text), "%r", current_time );
 
+	string_format_time( date_text, sizeof(date_text), "%b %d, %Y%n%A", current_time );
+
 	text_layer_set_text( &time_layer, time_text );
+	text_layer_set_text( &date_layer, date_text );
 }
 
 
@@ -57,11 +62,18 @@ void handle_init( AppContextRef ctx )
 	layer_add_child( &window.layer, &background_image.layer.layer );
 
 	// Init the text layer used to show the time.
-	text_layer_init( &time_layer, GRect( 32, 0, 144, 168 ) );
+	text_layer_init( &time_layer, GRect( 54, 1, 144, 168 ) );
 	text_layer_set_text_color( &time_layer, GColorBlack );
 	text_layer_set_background_color( &time_layer, GColorClear );
-	text_layer_set_font( &time_layer, fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CHICAGO_12)) );
+	text_layer_set_font( &time_layer, fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_CHICAGO_13)) );
 	layer_add_child( &window.layer, &time_layer.layer );
+
+	// Init the text layer used to show the date.
+	text_layer_init( &date_layer, GRect( 9, 86, 144, 168 ) );
+	text_layer_set_text_color( &date_layer, GColorBlack );
+	text_layer_set_background_color( &date_layer, GColorClear );
+	text_layer_set_font( &date_layer, fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FONT_GENEVA_12)) );
+	layer_add_child( &window.layer, &date_layer.layer );
 
 	// Avoid a blank screen on watch start.
 	PblTm tick_time;
