@@ -16,7 +16,7 @@ TextLayer time_layer;
 TextLayer date_layer;
 
 char time_text[] = "00:00 xx";
-char date_text[] = "September 00, 0000\nSaturday";
+char date_text[] = "September 00, 0000\nWednesday";
 
 
 void update_display( PblTm *current_time );
