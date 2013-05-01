@@ -15,7 +15,7 @@ BmpContainer background_image;
 TextLayer time_layer;
 TextLayer date_layer;
 
-char time_text[] = "00:00 xx ";
+char time_text[] = "00:00 xx";
 char date_text[] = "September 00, 0000\nSaturday";
 
 
@@ -29,9 +29,9 @@ void pbl_main( void *params );
 void update_display( PblTm *current_time )
 {
 	if( clock_is_24h_style() )
-		string_format_time( time_text, sizeof(time_text), "    %H:%M", current_time );
+		string_format_time( time_text, sizeof(time_text), "   %H:%M", current_time );
 	else
-		string_format_time( time_text, sizeof(time_text), "%I:%M %p", current_time );
+		string_format_time( time_text, sizeof(time_text), "%I:%M%p", current_time );
 
 	string_format_time( date_text, sizeof(date_text), "%b %d, %Y%n%A", current_time );
 

@@ -17,7 +17,6 @@
 		
 		{
 			"type": "font",
-			"characterRegex": "[:0-9]",
 			"defName": "FONT_CHICAGO_13",
 			"file": "fonts/Chicago.ttf"
 		},
