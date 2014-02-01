@@ -1,0 +1,38 @@
+{
+  "uuid": "3067d564-f8d2-45d8-be71-45b9961d1bc8",
+  "shortName": "iWatch",
+  "longName": "iWatch",
+  "companyName": "Raptor007",
+  "versionCode": 2,
+  "versionLabel": "2.0.0",
+  "watchapp": {
+    "watchface": true
+  },
+  "appKeys": {},
+  "resources": {
+    "media": [
+      {
+        "menuIcon": true,
+        "type": "png",
+        "name": "IMAGE_MENU_ICON",
+        "file": "images/iwatch_icon.png"
+      },
+      {
+        "type": "png",
+        "name": "IMAGE_BACKGROUND",
+        "file": "images/iwatch.png"
+      },
+      {
+        "characterRegex": "[:0-9]",
+        "type": "font",
+        "name": "FONT_CHICAGO_13",
+        "file": "fonts/Chicago.ttf"
+      },
+      {
+        "type": "font",
+        "name": "FONT_GENEVA_12",
+        "file": "fonts/Geneva.ttf"
+      }
+    ]
+  }
+}
