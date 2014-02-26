@@ -3,7 +3,7 @@
 # Get the script name; this method works for both direct calling and sourcing.
 if [ "$0" = "-bash" ]
 then
-	THIS="$PWD/${BASH_ARGV[0]}"
+	THIS="${BASH_ARGV[0]}"
 else
 	THIS="$0"
 fi
