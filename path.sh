@@ -8,12 +8,20 @@ else
 	THIS="$0"
 fi
 
-# Get the path to this script and the path to the PebbleSDK/bin directory.
-HERE="$(cd $(dirname $THIS) >& /dev/null; pwd)"
-BIN_PATH="$HERE/PebbleSDK-2.0.1/bin"
+# Get the path to this script.
+HERE="$(cd $(dirname $THIS) >& /dev/null && pwd)"
 
-# Only add the PebbleSDK/bin directory to the path if it's not already there.
-if [ "$(echo $PATH | grep $BIN_PATH)" = "" ]
+# If we didn't choose a specific PebbleSDK by environment variable, find the latest.
+if [ -z "$PEBBLE_SDK" ]
 then
-	export PATH="$PATH:$BIN_PATH"
+	PEBBLE_SDK="$(cd $HERE && ls -d -t1 PebbleSDK-* 2>/dev/null | head -n1)"
+fi
+
+# Get the full path to the PebbleSDK/bin directory.
+BIN_PATH="$HERE/$PEBBLE_SDK/bin"
+
+# Add this PebbleSDK/bin directory to the start of the path, if it's not already there.
+if [ -z "$(echo $PATH | grep $BIN_PATH)" ]
+then
+	export PATH="$BIN_PATH:$PATH"
 fi
