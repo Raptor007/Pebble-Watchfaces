@@ -25,3 +25,13 @@ if [ -z "$(echo $PATH | grep $BIN_PATH)" ]
 then
 	export PATH="$BIN_PATH:$PATH"
 fi
+
+# For virtualenv (Pebble SDK 3) add Python framework bin to the end of the path.
+PYTHON_PATH="/opt/local/Library/Frameworks/Python.framework/Versions/2.7/bin"
+if [ -d "$PYTHON_PATH" ]
+then
+	if [ -z "$(echo $PATH | grep $PYTHON_PATH)" ]
+	then
+		export PATH="$PATH:$PYTHON_PATH"
+	fi
+fi

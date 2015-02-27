@@ -11,3 +11,4 @@
 *.o
 PebbleSDK-*
 build
+.lock-*
