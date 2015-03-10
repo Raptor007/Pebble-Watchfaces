@@ -37,14 +37,16 @@ then
 	sudo port install python27 +universal
 	sudo port install python_select +universal
 	sudo port select --set python python27
-	sudo port install py27-pil +universal
-	sudo port install boost +python27 +universal
 	sudo port install py27-pip +universal
 	sudo port select --set pip pip27
+	sudo port install py27-pil +universal
+	sudo port install boost +python27 +universal
 else
+	echo
 	echo "MacPorts not installed; skipping dependency installation."
-	echo "If this fails, please install MacPorts and try again:"
+	echo "If setup fails now, please install MacPorts and try again:"
 	echo "  https://macports.org/"
+	echo
 fi
 
 CFLAGS="" pip install --user -r "${PEBBLE_SDK}/requirements.txt"
