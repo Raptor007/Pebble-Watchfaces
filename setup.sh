@@ -19,8 +19,8 @@ source "./path.sh"
 
 if [ -z "${PEBBLE_SDK}" ]
 then
-	echo "Pebble SDK not found."
-	return
+	echo "ERROR: Pebble SDK not found."
+	exit
 fi
 
 echo "Detected version: ${PEBBLE_SDK}"
