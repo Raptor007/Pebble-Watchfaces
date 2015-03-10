@@ -15,7 +15,7 @@ then
 	sudo chmod +x path.sh
 fi
 
-source path.sh
+source "./path.sh"
 
 if [ -z "${PEBBLE_SDK}" ]
 then
@@ -38,6 +38,7 @@ then
 	sudo port install python_select +universal
 	sudo port select --set python python27
 	sudo port install py27-pil +universal
+	sudo port install boost +python27 +universal
 	sudo port install py27-pip +universal
 	sudo port select --set pip pip27
 else
