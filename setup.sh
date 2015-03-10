@@ -7,7 +7,7 @@ echo "You may need to enter your sudo password, possibly several times."
 
 if [ ! -f "path.sh" ]
 then
-	curl -o path.sh https://github.com/Raptor007/Pebble-Watchfaces/blob/master/path.sh
+	curl -o path.sh https://raw.githubusercontent.com/Raptor007/Pebble-Watchfaces/master/path.sh
 fi
 
 if [ ! -x "path.sh" ]
