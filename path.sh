@@ -21,10 +21,10 @@ then
 	fi
 fi
 
-# If we didn't choose a specific PebbleSDK by environment variable, find the latest.
+# If we didn't choose a specific PebbleSDK by environment variable, find the latest (alphabetically).
 if [ -z "$PEBBLE_SDK" ]
 then
-	PEBBLE_SDK="$(cd $HERE && ls -d -t1 PebbleSDK-* 2>/dev/null | head -n1)"
+	PEBBLE_SDK="$(cd $HERE && ls -d -r1 PebbleSDK-* 2>/dev/null | head -n1)"
 fi
 
 # Get the full path to the PebbleSDK/bin directory.
