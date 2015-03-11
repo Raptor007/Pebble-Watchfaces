@@ -42,15 +42,24 @@ then
 	sudo port install py27-pil +universal
 	sudo port install cctools +universal
 
-	if [ ! -x "/opt/local/bin/clang++" ]
+	# Prefer system libc++ if present, otherwise use MacPorts.
+	if [ ! -f "/usr/lib/libc++.dylib" ]
 	then
-		sudo port install clang-3.4 +universal
-		sudo port install clang_select +universal
-		sudo port select --set clang mp-clang-3.4
+		if [ ! -x "/opt/local/bin/clang++" ]
+		then
+			sudo port install clang-3.4 +universal
+			sudo port install clang_select +universal
+			sudo port select --set clang mp-clang-3.4
+		fi
+
+		sudo port install libcxx +universal configure.compiler=macports-clang
 	fi
 
-	sudo port install libcxx +universal configure.compiler=macports-clang
-	sudo port install boost +universal +python27 -no_static
+	# Prefer Homebrew boost if present, otherwise use MacPorts.
+	if [ ! -f "/usr/local/lib/libboost_python-mt.dylib" ]
+	then
+		sudo port install boost +universal +python27 -no_static
+	fi
 else
 	echo
 	echo "MacPorts not installed; skipping dependency installation."
