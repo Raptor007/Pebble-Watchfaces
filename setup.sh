@@ -46,7 +46,7 @@ then
 	then
 		sudo port install clang-3.6 +universal
 		sudo port install clang_select +universal
-		sudo port select --set clang clang-3.7
+		sudo port select --set clang clang-3.6
 	fi
 
 	sudo port install libcxx +universal configure.compiler=macports-clang
