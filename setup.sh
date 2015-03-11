@@ -41,6 +41,15 @@ then
 	sudo port select --set pip pip27
 	sudo port install py27-pil +universal
 	sudo port install boost +python27 +universal
+
+	if [ ! -x "/opt/local/bin/clang++" ]
+	then
+		sudo port install clang-3.6 +universal
+		sudo port install clang_select +universal
+		sudo port select --set clang clang-3.7
+	fi
+
+	sudo port install libcxx +universal configure.compiler=macports-clang
 else
 	echo
 	echo "MacPorts not installed; skipping dependency installation."
@@ -49,7 +58,7 @@ else
 	echo
 fi
 
-CFLAGS="" pip install --user -r "${PEBBLE_SDK}/requirements.txt"
+CFLAGS="" pip install --user --upgrade -r "${PEBBLE_SDK}/requirements.txt"
 
 if [ -z "$(which virtualenv)" ]
 then
@@ -64,8 +73,13 @@ then
 	fi
 
 	source "${PEBBLE_SDK}/.env/bin/activate"
-	CFLAGS="" pip install -r "${PEBBLE_SDK}/requirements.txt"
+	CFLAGS="" pip install --upgrade -r "${PEBBLE_SDK}/requirements.txt"
 	deactivate
+
+	if [ ! -f "${PEBBLE_SDK}/Pebble/common/qemu/qemu-system-arm_Darwin_i386" ]
+	then
+		sudo ln -sf "${HERE}/${PEBBLE_SDK}/Pebble/common/qemu/qemu-system-arm_Darwin_x86_64" "${PEBBLE_SDK}/Pebble/common/qemu/qemu-system-arm_Darwin_i386"
+	fi
 fi
 
 GCC_FILES="$(find ${PEBBLE_SDK} -name pebble_sdk_gcc.py)"
