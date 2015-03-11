@@ -44,9 +44,9 @@ then
 
 	if [ ! -x "/opt/local/bin/clang++" ]
 	then
-		sudo port install clang-3.6 +universal
+		sudo port install clang-3.4 +universal
 		sudo port install clang_select +universal
-		sudo port select --set clang clang-3.6
+		sudo port select --set clang mp-clang-3.4
 	fi
 
 	sudo port install libcxx +universal configure.compiler=macports-clang
