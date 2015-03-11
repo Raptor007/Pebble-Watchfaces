@@ -40,7 +40,7 @@ then
 	sudo port install py27-pip +universal
 	sudo port select --set pip pip27
 	sudo port install py27-pil +universal
-	sudo port install boost +python27 +universal
+	sudo port install cctools +universal
 
 	if [ ! -x "/opt/local/bin/clang++" ]
 	then
@@ -50,6 +50,7 @@ then
 	fi
 
 	sudo port install libcxx +universal configure.compiler=macports-clang
+	sudo port install boost +universal +python27 -no_static
 else
 	echo
 	echo "MacPorts not installed; skipping dependency installation."
@@ -76,10 +77,25 @@ then
 	CFLAGS="" pip install --upgrade -r "${PEBBLE_SDK}/requirements.txt"
 	deactivate
 
+	echo "Fixing Pebble simulator..."
+
 	if [ ! -f "${PEBBLE_SDK}/Pebble/common/qemu/qemu-system-arm_Darwin_i386" ]
 	then
-		sudo ln -sf "${HERE}/${PEBBLE_SDK}/Pebble/common/qemu/qemu-system-arm_Darwin_x86_64" "${PEBBLE_SDK}/Pebble/common/qemu/qemu-system-arm_Darwin_i386"
+		cd "${PEBBLE_SDK}/Pebble/common/qemu" && sudo ln -s qemu-system-arm_Darwin_x86_64 qemu-system-arm_Darwin_i386
+		cd "${HERE}"
 	fi
+
+	BOOSTLIBS="$(ls -1 /opt/local/lib/libboost*)"
+	for BOOSTLIB in ${BOOSTLIBS}
+	do
+		BREW_BOOSTLIB="/usr/local/lib/$(basename ${BOOSTLIB})"
+		if [ -f "${BREW_BOOSTLIB}" ]
+		then
+			/opt/local/bin/install_name_tool -change "${BOOSTLIB}" "${BREW_BOOSTLIB}" "${PEBBLE_SDK}/Pebble/common/phonesim/PyV8/darwin64/_PyV8.so"
+		else
+			/opt/local/bin/install_name_tool -change "${BREW_BOOSTLIB}" "${BOOSTLIB}" "${PEBBLE_SDK}/Pebble/common/phonesim/PyV8/darwin64/_PyV8.so"
+		fi
+	done
 fi
 
 GCC_FILES="$(find ${PEBBLE_SDK} -name pebble_sdk_gcc.py)"
