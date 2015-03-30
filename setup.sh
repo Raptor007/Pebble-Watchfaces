@@ -107,6 +107,13 @@ then
 	done
 fi
 
+if [ ! -d "${PEBBLE_SDK}/Examples/watchfaces/drop_zone" ]
+then
+	echo "Downloading example watchface drop_zone..."
+	mkdir -p "${PEBBLE_SDK}/Examples/watchfaces"
+	svn co 'https://github.com/pebble-examples/drop-zone/trunk' "${PEBBLE_SDK}/Examples/watchfaces/drop_zone"
+fi
+
 GCC_FILES="$(find ${PEBBLE_SDK} -name pebble_sdk_gcc.py)"
 if [ -z "${GCC_FILES}" ]
 then
