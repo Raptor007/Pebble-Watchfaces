@@ -2,8 +2,6 @@
 
 echo
 echo "Pebble SDK Setup Script by Raptor007"
-echo
-echo "You may need to enter your sudo password, possibly several times."
 
 if [ ! -f "path.sh" ]
 then
@@ -12,7 +10,7 @@ fi
 
 if [ ! -x "path.sh" ]
 then
-	sudo chmod +x path.sh
+	chmod +x path.sh
 fi
 
 source "./path.sh"
@@ -24,6 +22,9 @@ then
 fi
 
 echo "Detected version: ${PEBBLE_SDK}"
+
+echo
+echo "You may need to enter your sudo password, possibly several times."
 
 if [ ! -z "$(which port)" ]
 then
@@ -55,10 +56,30 @@ then
 		sudo port install libcxx +universal configure.compiler=macports-clang
 	fi
 
+	# Prefer system libc++abi if present, otherwise use MacPorts.
+	if [ ! -f "/usr/lib/libc++abi.dylib" ]
+	then
+		if [ ! -x "/opt/local/bin/clang++" ]
+		then
+			sudo port install clang-3.4 +universal
+			sudo port install clang_select +universal
+			sudo port select --set clang mp-clang-3.4
+		fi
+
+		sudo port install libcxxabi +universal configure.compiler=macports-clang
+	fi
+
 	# Prefer Homebrew boost if present, otherwise use MacPorts.
 	if [ ! -f "/usr/local/lib/libboost_python-mt.dylib" ]
 	then
-		sudo port install boost +universal +python27 -no_static
+		if [ ! -x "/opt/local/bin/clang++" ]
+		then
+			sudo port install clang-3.4 +universal
+			sudo port install clang_select +universal
+			sudo port select --set clang mp-clang-3.4
+		fi
+
+		CFLAGS="-fPIC" CXXFLAGS="-fPIC" LDFLAGS="-fPIC" sudo port install boost +universal +python27 +clang34 -no_static configure.compiler=macports-clang
 	fi
 else
 	echo
@@ -68,12 +89,9 @@ else
 	echo
 fi
 
+sudo pip install --upgrade pip
 CFLAGS="" pip install --user --upgrade -r "${PEBBLE_SDK}/requirements.txt"
-
-if [ -z "$(which virtualenv)" ]
-then
-	sudo pip install virtualenv
-fi
+sudo pip install --upgrade virtualenv
 
 if [ ! -z "$(echo ${PEBBLE_SDK} | grep PebbleSDK-3)" ]
 then
@@ -94,17 +112,75 @@ then
 		cd "${HERE}"
 	fi
 
-	BOOSTLIBS="$(ls -1 /opt/local/lib/libboost*)"
-	for BOOSTLIB in ${BOOSTLIBS}
-	do
-		BREW_BOOSTLIB="/usr/local/lib/$(basename ${BOOSTLIB})"
-		if [ -f "${BREW_BOOSTLIB}" ]
+	# If no Homebrew boost, we need PyV8 to look in /opt/local/lib instead.
+	if [ ! -f "/usr/local/lib/libboost_python-mt.dylib" ]
+	then
+		# First, keep a backup if we haven't already done so.
+		if [ ! -f "${HERE}/${PEBBLE_SDK}/Pebble/common/phonesim/PyV8/darwin64/_PyV8.so.bak" ]
 		then
-			/opt/local/bin/install_name_tool -change "${BOOSTLIB}" "${BREW_BOOSTLIB}" "${PEBBLE_SDK}/Pebble/common/phonesim/PyV8/darwin64/_PyV8.so"
-		else
-			/opt/local/bin/install_name_tool -change "${BREW_BOOSTLIB}" "${BOOSTLIB}" "${PEBBLE_SDK}/Pebble/common/phonesim/PyV8/darwin64/_PyV8.so"
+			cp "${HERE}/${PEBBLE_SDK}/Pebble/common/phonesim/PyV8/darwin64/_PyV8.so" "${HERE}/${PEBBLE_SDK}/Pebble/common/phonesim/PyV8/darwin64/_PyV8.so.bak"
 		fi
-	done
+
+		# Use the PYV8_FIX environment variable to determine if we'll relink the existing .so or rebuild it from source.
+		if [ "${PYV8_FIX}" != "rebuild" ]
+		then
+			# Use cctools to relink PyV8 from /usr/local/bin to /opt/local/bin.
+
+			NAMETOOL="install_name_tool"
+			if [ -x "/opt/local/bin/install_name_tool" ]
+			then
+				NAMETOOL="/opt/local/bin/install_name_tool"
+			fi
+
+			BOOSTLIBS="$(ls -1 /opt/local/lib/libboost*)"
+			for BOOSTLIB in ${BOOSTLIBS}
+			do
+				BREW_BOOSTLIB="/usr/local/lib/$(basename ${BOOSTLIB})"
+				if [ -f "${BREW_BOOSTLIB}" ]
+				then
+					"${NAMETOOL}" -change "${BOOSTLIB}" "${BREW_BOOSTLIB}" "${PEBBLE_SDK}/Pebble/common/phonesim/PyV8/darwin64/_PyV8.so"
+				else
+					"${NAMETOOL}" -change "${BREW_BOOSTLIB}" "${BOOSTLIB}" "${PEBBLE_SDK}/Pebble/common/phonesim/PyV8/darwin64/_PyV8.so"
+				fi
+			done
+		else
+			# Rebuild PyV8 from source.
+
+			svn co 'https://github.com/pebble/pyv8/trunk' /tmp/pyv8
+			cd /tmp/pyv8
+			sed "s#extra_compile_args += \[\"-Wdeprecated-writable-strings\", \"-stdlib=libc++\"\]##" /tmp/pyv8/setup.py | sed "s#.replace\('-Werror', ''\)#.replace('-Werror', '').replace('-Wlinefeed-eof', '')#" | sed "s#'GCC_WARN_ABOUT_MISSING_NEWLINE': 'YES'#'GCC_WARN_ABOUT_MISSING_NEWLINE': 'NO'#" > /tmp/pyv8/setup_gcc.py
+			chmod +x /tmp/pyv8/*.py
+
+			PYV8_CC="clang++"
+			if [ -x "/opt/local/bin/clang++" ]
+			then
+				PYV8_CC="/opt/local/bin/clang++"
+			fi
+
+			if [ -z "${PYTHON_HOME}" -a -d "/opt/local/Library/Frameworks/Python.framework/Versions/2.7" ]
+			then
+				PYTHON_HOME="/opt/local/Library/Frameworks/Python.framework/Versions/2.7"
+			fi
+
+			PYV8_FLAGS="-I/opt/local/include -std=c++11 -stdlib=libc++ -lc++ -lc++abi -lboost_python-mt -mmacosx-version-min=10.6 -fPIC"
+			PYTHON_HOME="${PYTHON_HOME}" BOOST_HOME=/opt/local CC="${PYV8_CC}" CXX="${PYV8_CC}" LINK="${PYV8_CC}" CFLAGS="${PYV8_FLAGS}" CCFLAGS="${PYV8_FLAGS}" CXXFLAGS="${PYV8_FLAGS}" LDFLAGS="${PYV8_FLAGS}" ./setup.py build
+
+			# If the build was successful, install our build of _PyV8.so into the Pebble SDK.
+			PYV8_SO="$(find /tmp/pyv8/build -name _PyV8.so)"
+			if [ ! -z "${PYV8_SO}" ]
+			then
+				cp "${PYV8_SO}" "${HERE}/${PEBBLE_SDK}/Pebble/common/phonesim/PyV8/darwin64/"
+			fi
+
+			cd "${HERE}"
+		fi
+	else
+		# We do have Homebrew boost installed, so restore our .so.bak if we've messed with the .so before.
+		if [ -f "${HERE}/${PEBBLE_SDK}/Pebble/common/phonesim/PyV8/darwin64/_PyV8.so.bak" ]
+		then
+			mv "${HERE}/${PEBBLE_SDK}/Pebble/common/phonesim/PyV8/darwin64/_PyV8.so.bak" "${HERE}/${PEBBLE_SDK}/Pebble/common/phonesim/PyV8/darwin64/_PyV8.so"
+		fi
+	fi
 fi
 
 if [ ! -d "${PEBBLE_SDK}/Examples/watchfaces/drop_zone" ]
