@@ -162,8 +162,8 @@ then
 				PYTHON_HOME="/opt/local/Library/Frameworks/Python.framework/Versions/2.7"
 			fi
 
-			PYV8_FLAGS="-I/opt/local/include -std=c++11 -stdlib=libc++ -lc++ -lc++abi -lboost_python-mt -mmacosx-version-min=10.6 -fPIC"
-			PYTHON_HOME="${PYTHON_HOME}" BOOST_HOME=/opt/local CC="${PYV8_CC}" CXX="${PYV8_CC}" LINK="${PYV8_CC}" CFLAGS="${PYV8_FLAGS}" CCFLAGS="${PYV8_FLAGS}" CXXFLAGS="${PYV8_FLAGS}" LDFLAGS="${PYV8_FLAGS}" ./setup.py build
+			PYV8_FLAGS="-I/opt/local/include -L/opt/local/lib -std=c++11 -stdlib=libc++ -mmacosx-version-min=10.6 -fPIC"
+			PYTHON_HOME="${PYTHON_HOME}" BOOST_HOME=/opt/local CC="${PYV8_CC}" CXX="${PYV8_CC}" LINK="${PYV8_CC}" CFLAGS="${PYV8_FLAGS}" CCFLAGS="${PYV8_FLAGS}" CXXFLAGS="${PYV8_FLAGS}" LDFLAGS="${PYV8_FLAGS} -lc++ -lc++abi -lboost_python-mt" ./setup.py build
 
 			# If the build was successful, install our build of _PyV8.so into the Pebble SDK.
 			PYV8_SO="$(find /tmp/pyv8/build -name _PyV8.so)"
