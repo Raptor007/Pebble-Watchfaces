@@ -26,11 +26,16 @@ echo "Detected version: ${PEBBLE_SDK}"
 echo
 echo "You may need to enter your sudo password, possibly several times."
 
-if [ ! -z "$(which port)" ]
+MACPORTS=""
+if [ -z "${SKIP_MACPORTS}" ]
+then
+	MACPORTS="$(which port)"
+fi
+
+if [ ! -z "${MACPORTS}" ]
 then
 	sudo port selfupdate
 	sudo port install arm-none-eabi-gcc +universal
-	sudo port install glib1 +universal
 	sudo port install glib2 +universal
 	sudo port install freetype +universal
 	sudo port install libmpc +universal
@@ -40,8 +45,16 @@ then
 	sudo port select --set python python27
 	sudo port install py27-pip +universal
 	sudo port select --set pip pip27
+	sudo port install py27-cython +universal
+	sudo port select --set cython cython27
 	sudo port install py27-pil +universal
 	sudo port install cctools +universal
+
+	if [ ! -z "$(echo ${PEBBLE_SDK} | grep pebble-sdk-4)" ]
+	then
+		sudo port install nodejs5 +universal
+		sudo port install npm3 +universal
+	fi
 
 	# Prefer system libc++ if present, otherwise use MacPorts.
 	if [ ! -f "/usr/lib/libc++.dylib" ]
@@ -89,21 +102,40 @@ else
 	echo
 fi
 
-sudo pip install --upgrade pip
-CFLAGS="" pip install --user --upgrade -r "${PEBBLE_SDK}/requirements.txt"
-sudo pip install --upgrade virtualenv
+PIP=""
+if [ -z "${SKIP_PIP}" ]
+then
+	PIP="$(which pip)"
+fi
+
+if [ ! -z "${PIP}" ]
+then
+	sudo -H pip install --upgrade pip
+	pip install --user --upgrade setuptools
+	CFLAGS="" pip install --user --upgrade -r "${PEBBLE_SDK}/requirements.txt"
+	pip install --user --upgrade readline
+	sudo -H pip install --upgrade virtualenv
+
+	if [ ! -z "$(echo ${PEBBLE_SDK} | grep PebbleSDK-3)$(echo ${PEBBLE_SDK} | grep pebble-sdk-4)" ]
+	then
+		if [ ! -d "${PEBBLE_SDK}/.env" ]
+		then
+			virtualenv --no-site-packages "${PEBBLE_SDK}/.env"
+		fi
+
+		source "${PEBBLE_SDK}/.env/bin/activate"
+		pip install --user --upgrade setuptools
+		CFLAGS="" pip install --upgrade -r "${PEBBLE_SDK}/requirements.txt"
+		pip install --upgrade readline
+		deactivate
+	fi
+else
+	echo "Pip not found; skipping Python dependency installation."
+	echo
+fi
 
 if [ ! -z "$(echo ${PEBBLE_SDK} | grep PebbleSDK-3)" ]
 then
-	if [ ! -d "${PEBBLE_SDK}/.env" ]
-	then
-		virtualenv --no-site-packages "${PEBBLE_SDK}/.env"
-	fi
-
-	source "${PEBBLE_SDK}/.env/bin/activate"
-	CFLAGS="" pip install --upgrade -r "${PEBBLE_SDK}/requirements.txt"
-	deactivate
-
 	echo "Fixing Pebble simulator..."
 
 	if [ ! -f "${PEBBLE_SDK}/Pebble/common/qemu/qemu-system-arm_Darwin_i386" ]
@@ -113,7 +145,7 @@ then
 	fi
 
 	# If no Homebrew boost, we need PyV8 to look in /opt/local/lib instead.
-	if [ ! -f "/usr/local/lib/libboost_python-mt.dylib" ]
+	if [ "${PYV8_FIX}" != "restore" -a ! -f "/usr/local/lib/libboost_python-mt.dylib" ]
 	then
 		# First, keep a backup if we haven't already done so.
 		if [ ! -f "${HERE}/${PEBBLE_SDK}/Pebble/common/phonesim/PyV8/darwin64/_PyV8.so.bak" ]
@@ -124,7 +156,7 @@ then
 		# Use the PYV8_FIX environment variable to determine if we'll relink the existing .so or rebuild it from source.
 		if [ "${PYV8_FIX}" != "rebuild" ]
 		then
-			# Use cctools to relink PyV8 from /usr/local/bin to /opt/local/bin.
+			echo "Making sure PyV8 is linked to MacPorts boost..."
 
 			NAMETOOL="install_name_tool"
 			if [ -x "/opt/local/bin/install_name_tool" ]
@@ -144,22 +176,25 @@ then
 				fi
 			done
 		else
-			# Rebuild PyV8 from source.
+			echo "Building PyV8 from source..."
 
 			svn co 'https://github.com/pebble/pyv8/trunk' /tmp/pyv8
 			cd /tmp/pyv8
 			sed "s#extra_compile_args += \[\"-Wdeprecated-writable-strings\", \"-stdlib=libc++\"\]##" /tmp/pyv8/setup.py | sed "s#.replace\('-Werror', ''\)#.replace('-Werror', '').replace('-Wlinefeed-eof', '')#" | sed "s#'GCC_WARN_ABOUT_MISSING_NEWLINE': 'YES'#'GCC_WARN_ABOUT_MISSING_NEWLINE': 'NO'#" > /tmp/pyv8/setup_gcc.py
 			chmod +x /tmp/pyv8/*.py
 
-			PYV8_CC="clang++"
-			if [ -x "/opt/local/bin/clang++" ]
+			if [ -z "${PYV8_CC}" ]
 			then
-				PYV8_CC="/opt/local/bin/clang++"
-			fi
+				PYV8_CC="clang++"
+				if [ -x "/opt/local/bin/clang++" ]
+				then
+					PYV8_CC="/opt/local/bin/clang++"
+				fi
 
-			if [ -z "${PYTHON_HOME}" -a -d "/opt/local/Library/Frameworks/Python.framework/Versions/2.7" ]
-			then
-				PYTHON_HOME="/opt/local/Library/Frameworks/Python.framework/Versions/2.7"
+				if [ -z "${PYTHON_HOME}" -a -d "/opt/local/Library/Frameworks/Python.framework/Versions/2.7" ]
+				then
+					PYTHON_HOME="/opt/local/Library/Frameworks/Python.framework/Versions/2.7"
+				fi
 			fi
 
 			PYV8_FLAGS="-I/opt/local/include -L/opt/local/lib -std=c++11 -stdlib=libc++ -mmacosx-version-min=10.6 -fPIC"
@@ -169,6 +204,7 @@ then
 			PYV8_SO="$(find /tmp/pyv8/build -name _PyV8.so)"
 			if [ ! -z "${PYV8_SO}" ]
 			then
+				echo "Success.  Installing our build of PyV8..."
 				cp "${PYV8_SO}" "${HERE}/${PEBBLE_SDK}/Pebble/common/phonesim/PyV8/darwin64/"
 			fi
 
@@ -178,9 +214,17 @@ then
 		# We do have Homebrew boost installed, so restore our .so.bak if we've messed with the .so before.
 		if [ -f "${HERE}/${PEBBLE_SDK}/Pebble/common/phonesim/PyV8/darwin64/_PyV8.so.bak" ]
 		then
+			echo "Restoring PyV8 from backup..."
 			mv "${HERE}/${PEBBLE_SDK}/Pebble/common/phonesim/PyV8/darwin64/_PyV8.so.bak" "${HERE}/${PEBBLE_SDK}/Pebble/common/phonesim/PyV8/darwin64/_PyV8.so"
 		fi
 	fi
+fi
+
+if [ -d "${PEBBLE_SDK}/arm-cs-tools" -a ! -d "${PEBBLE_SDK}/arm-cs-tools/bin.bak" ]
+then
+	echo "Symlinking arm-cs-tools/bin to /opt/local/bin..."
+	mv "${PEBBLE_SDK}/arm-cs-tools/bin" "${PEBBLE_SDK}/arm-cs-tools/bin.bak" 2>/dev/null
+	sudo ln -s /opt/local/bin "${PEBBLE_SDK}/arm-cs-tools/bin"
 fi
 
 if [ ! -d "${PEBBLE_SDK}/Examples/watchfaces/drop_zone" ]
@@ -190,21 +234,22 @@ then
 	svn co 'https://github.com/pebble-examples/drop-zone/trunk' "${PEBBLE_SDK}/Examples/watchfaces/drop_zone"
 fi
 
-GCC_FILES="$(find ${PEBBLE_SDK} -name pebble_sdk_gcc.py)"
+GCC_FILES="$(find ${PEBBLE_SDK} ~/Library/Application\ Support/Pebble\ SDK/SDKs/current/sdk-core -name pebble_sdk_gcc.py)"
 if [ -z "${GCC_FILES}" ]
 then
 	echo "Generating waf build scripts..."
 	cd "${PEBBLE_SDK}/Examples/watchfaces/drop_zone" && pebble build 2>/dev/null
 	cd "${HERE}"
 
-	GCC_FILES="$(find ${PEBBLE_SDK} -name pebble_sdk_gcc.py)"
+	GCC_FILES="$(find ${PEBBLE_SDK} ~/Library/Application\ Support/Pebble\ SDK/SDKs/current/sdk-core -name pebble_sdk_gcc.py)"
 fi
 
 if [ ! -z "${GCC_FILES}" ]
 then
-	for GCC_FILE in ${GCC_FILES}
+	echo "${GCC_FILES}" | while read -r GCC_FILE
 	do
-		if [ -z "$(grep nostartfiles ${GCC_FILE})" ]
+		GREP_RESULT=$(grep nostartfiles "${GCC_FILE}")
+		if [ -z "${GREP_RESULT}" ]
 		then
 			echo "Patching: ${GCC_FILE}"
 

@@ -10,5 +10,6 @@
 *.xcuserstate
 *.o
 PebbleSDK-*
+pebble-sdk-*
 build
 .lock-*
