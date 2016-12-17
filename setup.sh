@@ -124,7 +124,8 @@ then
 		fi
 
 		source "${PEBBLE_SDK}/.env/bin/activate"
-		pip install --user --upgrade setuptools
+		pip install --upgrade pip
+		pip install --upgrade setuptools
 		CFLAGS="" pip install --upgrade -r "${PEBBLE_SDK}/requirements.txt"
 		pip install --upgrade readline
 		deactivate
@@ -234,14 +235,23 @@ then
 	svn co 'https://github.com/pebble-examples/drop-zone/trunk' "${PEBBLE_SDK}/Examples/watchfaces/drop_zone"
 fi
 
-GCC_FILES="$(find ${PEBBLE_SDK} ~/Library/Application\ Support/Pebble\ SDK/SDKs/current/sdk-core -name pebble_sdk_gcc.py)"
+GCC_FILES="$(find ${PEBBLE_SDK} -name pebble_sdk_gcc.py)"
+if [ -z "${GCC_FILES}" -a ! -z "$(echo ${PEBBLE_SDK} | grep pebble-sdk-4)" ]
+then
+	GCC_FILES="$(find ~/Library/Application\ Support/Pebble\ SDK/SDKs/current/sdk-core -name pebble_sdk_gcc.py)"
+fi
+
 if [ -z "${GCC_FILES}" ]
 then
 	echo "Generating waf build scripts..."
 	cd "${PEBBLE_SDK}/Examples/watchfaces/drop_zone" && pebble build 2>/dev/null
 	cd "${HERE}"
 
-	GCC_FILES="$(find ${PEBBLE_SDK} ~/Library/Application\ Support/Pebble\ SDK/SDKs/current/sdk-core -name pebble_sdk_gcc.py)"
+	GCC_FILES="$(find ${PEBBLE_SDK} -name pebble_sdk_gcc.py)"
+	if [ -z "${GCC_FILES}" -a ! -z "$(echo ${PEBBLE_SDK} | grep pebble-sdk-4)" ]
+	then
+		GCC_FILES="$(find ~/Library/Application\ Support/Pebble\ SDK/SDKs/current/sdk-core -name pebble_sdk_gcc.py)"
+	fi
 fi
 
 if [ ! -z "${GCC_FILES}" ]
@@ -261,6 +271,8 @@ then
 			else
 				echo "WARNING: Failed to patch: ${GCC_FILE}"
 			fi
+		else
+			echo "Already patched: ${GCC_FILE}"
 		fi
 	done
 else
